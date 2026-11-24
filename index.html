@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aventure : un jeu pour apprendre la programmation orientée objet</title>
+<meta name="description" content="Un jeu d'aventure vu de dessus à construire mission après mission, en C++ avec Qt : énoncés et corrigés à télécharger.">
+<link rel="icon" type="image/png" href="images/heros_bas.png">
+<style>
+:root {
+  --fond: #f5f3ea; --carte: #ffffff; --texte: #1d2721; --discret: #56635a;
+  --trait: #d8ddd0; --accent: #2a7537; --accent-vif: #225f2d; --sur-accent: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #131915; --carte: #1b231e; --texte: #e7ece7; --discret: #9dada2;
+    --trait: #2d3a31; --accent: #6cc272; --accent-vif: #86d28b; --sur-accent: #0d150f;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--fond); color: var(--texte);
+  font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.page { max-width: 920px; margin: 0 auto; padding: 0 20px; }
+a { color: var(--accent); }
+code {
+  font: 0.92em ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: var(--carte); border: 1px solid var(--trait); border-radius: 5px; padding: 1px 5px;
+}
+
+.entete { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; align-items: center; padding-top: 56px; padding-bottom: 44px; }
+.surtitre { margin: 0 0 10px; color: var(--discret); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(2.5rem, 7vw, 3.7rem); line-height: 1.05; letter-spacing: -0.02em; }
+.chapeau { margin: 16px 0 24px; font-size: 1.12rem; color: var(--discret); }
+.capture { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--trait); }
+
+.bouton {
+  display: inline-flex; align-items: baseline; gap: 8px; padding: 9px 15px; border-radius: 9px;
+  background: var(--accent); border: 1px solid var(--accent); color: var(--sur-accent);
+  font-weight: 650; text-decoration: none; white-space: nowrap;
+}
+.bouton:hover { background: var(--accent-vif); border-color: var(--accent-vif); }
+.bouton small { font-size: 0.76em; font-weight: 500; opacity: 0.85; }
+.bouton.secondaire { background: transparent; border-color: var(--trait); color: var(--texte); }
+.bouton.secondaire:hover { border-color: var(--accent); color: var(--accent); }
+.bouton:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.boutons { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+
+section { padding: 28px 0 12px; }
+h2 { margin: 0 0 14px; font-size: 1.55rem; letter-spacing: -0.01em; }
+section > p { max-width: 68ch; }
+
+.etapes { list-style: none; counter-reset: etape; margin: 0 0 20px; padding: 0; display: grid; gap: 12px; }
+.etapes li { counter-increment: etape; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+.etapes li::before {
+  content: counter(etape); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--carte); border: 1px solid var(--trait); font-weight: 700;
+}
+.etapes p { margin: 4px 0 0; }
+.etapes .boutons { margin-top: 10px; }
+
+.missions { list-style: none; margin: 18px 0; padding: 0; display: grid; gap: 10px; }
+.mission {
+  display: grid; grid-template-columns: 48px 1fr auto; gap: 16px; align-items: center;
+  background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 14px 16px;
+}
+.vignette { width: 48px; height: 48px; border-radius: 8px; background: url(images/herbe.png) 0 0 / 48px 48px; image-rendering: pixelated; }
+.vignette img { display: block; width: 48px; height: 48px; image-rendering: pixelated; }
+.numero { margin: 0; color: var(--discret); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+h3 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+.notion { margin: 2px 0 0; color: var(--discret); font-size: 0.93rem; }
+
+.note { border-left: 4px solid var(--accent); background: var(--carte); border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 16px 0; max-width: 68ch; }
+.note p { margin: 0; }
+footer { color: var(--discret); font-size: 0.88rem; padding-top: 28px; padding-bottom: 44px; }
+
+@media (max-width: 760px) {
+  .entete { grid-template-columns: 1fr; gap: 26px; padding-top: 36px; padding-bottom: 28px; }
+  .mission { grid-template-columns: 48px 1fr; }
+  .mission .boutons { grid-column: 1 / -1; }
+  .bouton { white-space: normal; }
+}
+</style>
+</head>
+<body>
+
+<header class="entete page">
+  <div>
+    <p class="surtitre">Cours Prog41 · C++ et Qt</p>
+    <h1>Aventure</h1>
+    <p class="chapeau">Un jeu vu de dessus à construire mission après mission, pour apprendre la programmation orientée objet. Le moteur du jeu est fourni : à vous d’écrire les personnages, les monstres et les objets.</p>
+    <p class="boutons">
+      <a class="bouton" href="#commencer">Pour commencer</a>
+      <a class="bouton secondaire" href="#missions">Les missions</a>
+    </p>
+  </div>
+  <img class="capture" src="images/apercu.png" width="662" height="502" alt="Le jeu vu de dessus : un héros parle à un villageois, près d’un pont, de ruines fermées et d’un slime.">
+</header>
+
+<main class="page">
+
+<section id="commencer">
+  <h2>Pour commencer</h2>
+  <ol class="etapes">
+    <li><p>Il vous faut Qt Creator. Le cours utilise Qt 6.8.3.</p></li>
+    <li><div>
+      <p>Téléchargez le kit de départ et décompressez-le. Il contient le dossier <code>moteur</code> et le projet <code>depart</code>.</p>
+      <p class="boutons"><a class="bouton" href="telechargements/aventure_depart.zip" download>Kit de départ <small>ZIP · 32&nbsp;ko</small></a></p>
+    </div></li>
+    <li><p>Ouvrez <code>depart/Aventure.pro</code> dans Qt Creator, compilez et lancez. Le héros se déplace avec les flèches du clavier.</p></li>
+  </ol>
+  <p class="boutons">
+    <a class="bouton secondaire" href="telechargements/presentation.pdf">Présentation du jeu <small>PDF · 293&nbsp;ko</small></a>
+    <a class="bouton secondaire" href="telechargements/moteur_reference.pdf">Référence du moteur <small>PDF · 104&nbsp;ko</small></a>
+  </p>
+</section>
+
+<section id="missions">
+  <h2>Les missions</h2>
+  <p>Les missions se suivent : chacune reprend votre projet là où la précédente l’a laissé. Avancez à votre rythme : lisez l’énoncé, programmez, puis comparez avec le corrigé.</p>
+  <ol class="missions">
+    <li class="mission">
+      <div class="vignette"><img src="images/heros_bas.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 0</p>
+        <h3>Découverte du moteur</h3>
+        <p class="notion">Concepts de l’objet</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission0_enonce.pdf">Énoncé <small>PDF · 51&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission0_corrige.zip" download>Corrigé <small>ZIP · 142&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/villageois.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 1</p>
+        <h3>La classe Personnage</h3>
+        <p class="notion">Classe, UML, encapsulation</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission1_enonce.pdf">Énoncé <small>PDF · 74&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission1_corrige.zip" download>Corrigé <small>ZIP · 190&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/slime.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 2</p>
+        <h3>Une troupe de slimes</h3>
+        <p class="notion">Constructeur, destructeur, tableau d’objets</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission2_enonce.pdf">Énoncé <small>PDF · 77&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission2_corrige.zip" download>Corrigé <small>ZIP · 190&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/villageoise.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 3</p>
+        <h3>Héros, villageois et monstres</h3>
+        <p class="notion">Héritage</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission3_enonce.pdf">Énoncé <small>PDF · 205&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission3_corrige.zip" download>Corrigé <small>ZIP · 323&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/chauve_souris.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 4</p>
+        <h3>Un bestiaire et des objets</h3>
+        <p class="notion">Hiérarchie, redéfinition, objet attribut</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission4_enonce.pdf">Énoncé <small>PDF · 73&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission4_corrige.zip" download>Corrigé <small>ZIP · 211&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/marchand.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 5</p>
+        <h3>Chaque personnage se présente</h3>
+        <p class="notion">Classes abstraites</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission5_enonce.pdf">Énoncé <small>PDF · 70&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission5_corrige.zip" download>Corrigé <small>ZIP · 481&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/epee.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 6</p>
+        <h3>Le combat</h3>
+        <p class="notion">Objet en paramètre, this</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission6_enonce.pdf">Énoncé <small>PDF · 71&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission6_corrige.zip" download>Corrigé <small>ZIP · 210&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/hache.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 7</p>
+        <h3>L’arme du héros</h3>
+        <p class="notion">Pointeur sur un objet</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission7_enonce.pdf">Énoncé <small>PDF · 97&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission7_corrige.zip" download>Corrigé <small>ZIP · 286&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/fantome.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Mission 8</p>
+        <h3>Des monstres qui apparaissent et disparaissent</h3>
+        <p class="notion">Objets dynamiques</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/mission8_enonce.pdf">Énoncé <small>PDF · 74&nbsp;ko</small></a> <a class="bouton secondaire" href="telechargements/mission8_corrige.zip" download>Corrigé <small>ZIP · 184&nbsp;ko</small></a></p>
+    </li>
+    <li class="mission">
+      <div class="vignette"><img src="images/coffre.png" width="48" height="48" alt=""></div>
+      <div>
+        <p class="numero">Projet final</p>
+        <h3>Votre aventure</h3>
+        <p class="notion">Point de départ : le corrigé de la mission 8</p>
+      </div>
+      <p class="boutons"><a class="bouton" href="telechargements/projet_enonce.pdf">Énoncé <small>PDF · 50&nbsp;ko</small></a></p>
+    </li>
+  </ol>
+  <div class="note">
+    <p><strong>Dans l’archive d’un corrigé :</strong> le projet Qt complet de la mission (ouvrez <code>Aventure.pro</code>), le dossier <code>moteur</code>, les réponses aux questions et les explications du code, en PDF. Bloqué ou en retard ? Le corrigé d’une mission est aussi le point de départ de la suivante.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="page">Mise à jour du 24.11.2026.</footer>
+
+</body>
+</html>
